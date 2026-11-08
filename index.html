@@ -9,7 +9,7 @@
 </style>
 </head>
 <body><main>
-<header><h1>내카메라 2.0</h1><p>8단계 · 좌표·GPS 연결 안정성 개선</p></header>
+<header><h1>내카메라 2.0</h1><p>26단계 · Google 지도 좌표 연결 개선</p></header>
 <section class="card"><h2>사진 촬영</h2>
 <p class="muted">사진 촬영 전에 아래의 '현재 위치 측정'을 누르면 측정한 GPS를 앱 기록에 연결합니다. JPEG 파일 자체에 GPS EXIF가 기록되지는 않습니다. 사진은 3MB 이하 JPEG로 저장됩니다.</p>
 <button id="openCamera" class="camera-main" type="button"><span class="symbol" aria-hidden="true">📷</span><span>사진 촬영</span></button>
@@ -91,7 +91,8 @@ $('measure').onclick=()=>{
   status(m,'err');busy=false;$('measure').disabled=false;
  },{enableHighAccuracy:true,timeout:25000,maximumAge:0});
 };
-$('maps').onclick=()=>{if(current)window.open('https://www.google.com/maps?q='+current.latitude+','+current.longitude,'_blank','noopener,noreferrer');};
+function googleMapsUrl(lat,lon){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(String(lat)+','+String(lon));}
+$('maps').onclick=()=>{if(current)window.open(googleMapsUrl(current.latitude,current.longitude),'_blank','noopener,noreferrer');};
 $('save').onclick=async()=>{
  if(!current)return;const snapshot={...current};$('save').disabled=true;
  try{const id=await uniqueId();await addRecord({id,type:'location',...snapshot,memo:$('memo').value.trim(),photoName:null,savedAt:new Date().toISOString()});$('memo').value='';current=null;$('maps').disabled=true;status(id+' 위치정보 저장 완료!','ok');await render();}
@@ -163,7 +164,7 @@ async function compressImage(file){
  }
  $('applyLocation').onclick=()=>{try{applyLocationText($('locationPaste').value);}catch(e){manualStatus(e.message,true);}};
  function parseCoords(s){const m=s.trim().match(/^\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*[,\s]+\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+))\s*$/);if(!m)throw Error('위도, 경도 순서로 입력하거나 복사하세요. 예: 35.024046, 126.714285');$('manualLat').value=m[1];$('manualLon').value=m[2];manualCoords();}
- $('checkManualMap').onclick=()=>{try{const c=manualCoords();window.open('https://www.google.com/maps?q='+c.latitude+','+c.longitude,'_blank','noopener,noreferrer');}catch(e){manualStatus(e.message,true);}};
+ $('checkManualMap').onclick=()=>{try{const c=manualCoords();window.open(googleMapsUrl(c.latitudeText,c.longitudeText),'_blank','noopener,noreferrer');}catch(e){manualStatus(e.message,true);}};
  function manualStatus(msg,err=false){$('manualStatus').textContent=msg;$('manualStatus').className='status '+(err?'err':'ok');}
  $('pasteCoords').onclick=async()=>{try{if(!navigator.clipboard?.readText)throw Error('이 브라우저는 클립보드 읽기를 지원하지 않습니다. 입력 칸을 길게 눌러 붙여넣으세요.');const copied=await navigator.clipboard.readText();$('locationPaste').value=copied;applyLocationText(copied);}catch(e){manualStatus('좌표 붙여넣기: '+e.message,true);}};
  async function prepareReference(file){if(!file)return;try{const blob=await compressImage(file);referenceBlob=blob;if(referenceUrl)URL.revokeObjectURL(referenceUrl);referenceUrl=URL.createObjectURL(blob);$('referencePreview').src=referenceUrl;$('referencePreview').hidden=false;$('referenceInfo').textContent=`참고 사진 준비 완료 · ${(blob.size/1024/1024).toFixed(2)}MB`;}catch(e){manualStatus('참고 사진 처리 실패: '+e.message,true);}}
@@ -182,7 +183,7 @@ async function render(){const root=$('records');root.replaceChildren();try{const
  if(r.photoName){const ph=document.createElement('div');ph.className='hint';ph.textContent='사진 불러오는 중...';article.append(ph);showPhoto(r.id,ph);article.append(cellText('p','사진: '+r.photoName+' · '+((r.photoBytes||0)/1024/1024).toFixed(2)+'MB'));}
  if(r.locationInput && r.locationInput.includes('+'))article.append(cellText('p','입력 플러스 코드: '+r.locationInput));if(r.memo)article.append(cellText('p','장소/메모: '+r.memo));if(r.photoSource==='reference')article.append(cellText('p','참고 사진'+(r.referenceSource?' · 출처: '+r.referenceSource:''))); 
  const actions=document.createElement('div');actions.className='actions';
- if(hasPos){const map=document.createElement('button');map.className='secondary';map.textContent='지도';map.onclick=()=>window.open('https://www.google.com/maps?q='+r.latitude+','+r.longitude,'_blank','noopener,noreferrer');actions.append(map);}
+ if(hasPos){const map=document.createElement('button');map.className='secondary';map.textContent='지도';map.onclick=()=>window.open(googleMapsUrl(r.latitudeText??r.latitude,r.longitudeText??r.longitude),'_blank','noopener,noreferrer');actions.append(map);}
  if(r.photoName){const down=document.createElement('button');down.className='secondary';down.textContent='사진 저장';down.onclick=()=>downloadPhoto(r.id);actions.append(down);}
  const del=document.createElement('button');del.className='danger';del.textContent='삭제';del.onclick=async()=>{if(!confirm(r.id+' 기록과 연결된 사진을 삭제할까요?'))return;try{await deleteRecord(r.id);await render();}catch(e){alert('삭제 실패: '+e.message);}};actions.append(del);article.append(actions);root.append(article);
  }}catch(e){root.append(cellText('p','목록 오류: '+e.message));}}
