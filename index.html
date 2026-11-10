@@ -15,6 +15,15 @@ label{margin:9px 0 5px}.grid{gap:7px;margin:9px 0}.item{padding:8px 10px}.item s
 .camera-main{min-height:94px;margin:9px 0;font-size:20px;gap:3px}.camera-main .symbol{font-size:29px}
 button{padding:11px 13px}.status{padding:10px;line-height:1.4}
 .record{padding:10px 0}.record p{margin:5px 0}.fileinput{margin:7px 0}
+
+/* Step 38: compact GPS results, presentation only. */
+.gps-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0}
+.gps-grid .item{padding:7px 6px;min-width:0}
+.gps-grid .item small{font-size:11px;line-height:1.3;margin-bottom:4px;white-space:nowrap}
+.gps-grid .item strong{display:block;font-size:12px;line-height:1.35;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.gps-grid #time{font-size:11px}
+.gps-grid .gps-map{min-width:0;padding:6px 3px;font-size:11px;line-height:1.4;min-height:55px;white-space:normal}
+@media(min-width:480px){.gps-grid .item small{font-size:12px}.gps-grid .item strong{font-size:14px}.gps-grid #time{font-size:12px}.gps-grid .gps-map{font-size:12px}}
 </style>
 </head>
 <body><main>
@@ -41,8 +50,8 @@ button{padding:11px 13px}.status{padding:10px;line-height:1.4}
 <button id="saveManual" style="width:100%;margin-top:14px">BN ID로 위치 등록</button><p id="manualStatus" class="status" role="status" aria-live="polite">좌표를 입력하면 저장할 수 있습니다.</p>
 </section>
 <section class="card"><h2>현재 위치 측정</h2><div id="status" class="status" role="status" aria-live="polite">아래 버튼을 눌러 위치를 측정하세요.</div>
-<div class="grid"><div class="item"><small>위도</small><strong id="lat">-</strong></div><div class="item"><small>경도</small><strong id="lon">-</strong></div><div class="item"><small>고도</small><strong id="alt">-</strong></div><div class="item"><small>수평 정확도</small><strong id="acc">-</strong></div><div class="item" style="grid-column:1/-1"><small>측정 시각</small><strong id="time">-</strong></div></div>
-<div class="buttons"><button id="measure">현재 위치 측정</button><button id="maps" class="secondary" disabled>Google 지도 확인</button></div>
+<div class="grid gps-grid"><div class="item"><small>위도</small><strong id="lat">-</strong></div><div class="item"><small>경도</small><strong id="lon">-</strong></div><div class="item"><small>고도</small><strong id="alt">-</strong></div><div class="item"><small>수평 정확도</small><strong id="acc">-</strong></div><div class="item"><small>측정 시각</small><strong id="time">-</strong></div><button id="maps" class="secondary gps-map" disabled>Google 지도 확인</button></div>
+<button id="measure" style="width:100%">현재 위치 측정</button>
 <label for="memo">메모 (선택)</label><textarea id="memo" rows="2" maxlength="300" placeholder="예: 금성산 둘레길 쉼터"></textarea>
 <button id="save" style="width:100%;margin-top:12px" disabled>BN ID로 위치만 저장</button><p class="muted">GPS 측정 후 위치를 저장할 수 있습니다.</p></section>
 
