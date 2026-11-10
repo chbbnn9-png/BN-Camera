@@ -15,15 +15,7 @@ label{margin:9px 0 5px}.grid{gap:7px;margin:9px 0}.item{padding:8px 10px}.item s
 .camera-main{min-height:94px;margin:9px 0;font-size:20px;gap:3px}.camera-main .symbol{font-size:29px}
 button{padding:11px 13px}.status{padding:10px;line-height:1.4}
 .record{padding:10px 0}.record p{margin:5px 0}.fileinput{margin:7px 0}
-
-/* Step 38: compact GPS results, presentation only. */
-.gps-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0}
-.gps-grid .item{padding:7px 6px;min-width:0}
-.gps-grid .item small{font-size:11px;line-height:1.3;margin-bottom:4px;white-space:nowrap}
-.gps-grid .item strong{display:block;font-size:12px;line-height:1.35;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
-.gps-grid #time{font-size:11px}
-.gps-grid .gps-map{min-width:0;padding:6px 3px;font-size:11px;line-height:1.4;min-height:55px;white-space:normal}
-@media(min-width:480px){.gps-grid .item small{font-size:12px}.gps-grid .item strong{font-size:14px}.gps-grid #time{font-size:12px}.gps-grid .gps-map{font-size:12px}}
+.zip-section{padding:10px 0}.zip-section+.zip-section{border-top:1px solid #dce6ed;margin-top:8px;padding-top:14px}.zip-section h3{font-size:15px;margin:0 0 8px;color:#18415b}
 </style>
 </head>
 <body><main>
@@ -50,19 +42,21 @@ button{padding:11px 13px}.status{padding:10px;line-height:1.4}
 <button id="saveManual" style="width:100%;margin-top:14px">BN ID로 위치 등록</button><p id="manualStatus" class="status" role="status" aria-live="polite">좌표를 입력하면 저장할 수 있습니다.</p>
 </section>
 <section class="card"><h2>현재 위치 측정</h2><div id="status" class="status" role="status" aria-live="polite">아래 버튼을 눌러 위치를 측정하세요.</div>
-<div class="grid gps-grid"><div class="item"><small>위도</small><strong id="lat">-</strong></div><div class="item"><small>경도</small><strong id="lon">-</strong></div><div class="item"><small>고도</small><strong id="alt">-</strong></div><div class="item"><small>수평 정확도</small><strong id="acc">-</strong></div><div class="item"><small>측정 시각</small><strong id="time">-</strong></div><button id="maps" class="secondary gps-map" disabled>Google 지도 확인</button></div>
-<button id="measure" style="width:100%">현재 위치 측정</button>
+<div class="grid"><div class="item"><small>위도</small><strong id="lat">-</strong></div><div class="item"><small>경도</small><strong id="lon">-</strong></div><div class="item"><small>고도</small><strong id="alt">-</strong></div><div class="item"><small>수평 정확도</small><strong id="acc">-</strong></div><div class="item" style="grid-column:1/-1"><small>측정 시각</small><strong id="time">-</strong></div></div>
+<div class="buttons"><button id="measure">현재 위치 측정</button><button id="maps" class="secondary" disabled>Google 지도 확인</button></div>
 <label for="memo">메모 (선택)</label><textarea id="memo" rows="2" maxlength="300" placeholder="예: 금성산 둘레길 쉼터"></textarea>
 <button id="save" style="width:100%;margin-top:12px" disabled>BN ID로 위치만 저장</button><p class="muted">GPS 측정 후 위치를 저장할 수 있습니다.</p></section>
 
 <details class="card collapsible" open><summary>저장된 기록 <span id="count">(0건)</span></summary><div class="buttons"><button id="export" class="secondary">CSV 내보내기</button><button id="refresh" class="secondary">목록 새로고침</button></div><p class="muted">기록은 이 브라우저에 저장됩니다. 사진까지 보관하려면 ZIP으로 백업하세요.</p><div id="records"><p class="muted">기록을 불러오는 중...</p></div></details>
 <details class="card collapsible"><summary>통합 백업 · 복원</summary>
-<p class="muted">사진과 위치기록을 ZIP 파일 하나로 백업합니다.</p>
+<div class="zip-section"><h3>① 통합 백업</h3>
 <button id="backupZip" style="width:100%">사진 + 위치기록 ZIP 백업</button>
-<p id="backupStatus" class="status" style="margin-top:12px" role="status" aria-live="polite">백업 전입니다.</p>
-<label for="restoreZip">이 앱에서 만든 ZIP 백업 복원</label><input class="fileinput" id="restoreZip" type="file" accept=".zip,application/zip">
-<button id="restoreBtn" class="secondary" style="width:100%">ZIP에서 누락된 기록 복원</button>
-<p class="muted">기존 BN ID는 유지하고 누락된 기록만 복원합니다.</p></details>
+<p id="backupStatus" class="status" style="margin-top:8px" role="status" aria-live="polite">백업 전입니다.</p></div>
+<div class="zip-section"><h3>② 통합 복원</h3>
+<label for="restoreZip">복원할 ZIP 파일 선택</label><input class="fileinput" id="restoreZip" type="file" accept=".zip,application/zip">
+<button id="restoreBtn" class="secondary" style="width:100%">누락된 기록 복원</button>
+<p id="restoreStatus" class="status" style="margin-top:8px" role="status" aria-live="polite">복원 전입니다.</p>
+<p class="hint">기존 기록은 유지하고 누락된 기록만 추가합니다.</p></div></details>
 <footer>BN 프로젝트 · 내카메라 2.0</footer>
 </main>
 <script>
@@ -215,6 +209,7 @@ $('refresh').onclick=render;
 // STEP 4: 표준 ZIP (STORE 방식, 무압축) 생성 및 같은 형식 복원.
 const encoder=new TextEncoder(), decoder=new TextDecoder();
 const zipStatus=(msg,err=false)=>{ $('backupStatus').textContent=msg; $('backupStatus').className='status '+(err?'err':'ok'); };
+const restoreStatus=(msg,err=false)=>{ $('restoreStatus').textContent=msg; $('restoreStatus').className='status '+(err?'err':'ok'); };
 const crcTable=(()=>{let t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?(0xEDB88320^(c>>>1)):(c>>>1);t.push(c>>>0);}return t;})();
 function crc32(data){let c=0xFFFFFFFF;for(const b of data)c=crcTable[(c^b)&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0;}
 function u16(view,pos,val){view.setUint16(pos,val,true);}function u32(view,pos,val){view.setUint32(pos,val>>>0,true);}
@@ -275,8 +270,8 @@ function validateRecord(r){
   if(r.photoName&&r.photoName!==r.id+'.jpg')throw Error(r.id+' 사진 파일명이 일치하지 않습니다.');
 }
 $('restoreBtn').onclick=async()=>{
- const file=$('restoreZip').files?.[0];if(!file){zipStatus('먼저 백업 ZIP 파일을 선택하세요.',true);return;}
- const btn=$('restoreBtn');btn.disabled=true;zipStatus('백업 파일을 검사하고 있습니다...');
+ const file=$('restoreZip').files?.[0];if(!file){restoreStatus('먼저 백업 ZIP 파일을 선택하세요.',true);return;}
+ const btn=$('restoreBtn');btn.disabled=true;restoreStatus('백업 파일을 검사하고 있습니다...');
  try{
   if(file.size>120*1024*1024)throw Error('120MB 이하의 ZIP만 복원할 수 있습니다.');
   const files=zipRead(new Uint8Array(await file.arrayBuffer()));
@@ -289,10 +284,10 @@ $('restoreBtn').onclick=async()=>{
    if(r.photoName){const bytes=files.get('photos/'+r.id+'.jpg');if(!bytes||bytes.length>3*1024*1024||bytes[0]!==0xff||bytes[1]!==0xd8)throw Error(r.id+' JPEG 파일이 없거나 손상됐습니다.');if(r.photoBytes!=null&&r.photoBytes!==bytes.length)throw Error(r.id+' 사진 용량이 일치하지 않습니다.');if(!existing.has(r.id))photos.push({id:r.id,blob:new Blob([bytes],{type:'image/jpeg'})});}
    if(existing.has(r.id)){skipped++;continue;}newRecords.push(r);
   }
-  if(!confirm(`검증 완료: 백업 ${manifest.records.length}건 중 신규 ${newRecords.length}건, 기존 ${skipped}건입니다. 신규 기록만 복원할까요?`)){zipStatus('복원을 취소했습니다.');return;}
+  if(!confirm(`검증 완료: 백업 ${manifest.records.length}건 중 신규 ${newRecords.length}건, 기존 ${skipped}건입니다. 신규 기록만 복원할까요?`)){restoreStatus('복원을 취소했습니다.');return;}
   if(newRecords.length){const db=await openDB();await new Promise((resolve,reject)=>{const tx=db.transaction([STORE,PHOTO_STORE],'readwrite');const rs=tx.objectStore(STORE),ps=tx.objectStore(PHOTO_STORE);for(const r of newRecords)rs.add(r);for(const p of photos)ps.add(p);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||Error('복원 실패'));tx.onabort=()=>reject(tx.error||Error('복원 실패'));});}
-  await render();zipStatus(`복원 완료: 신규 ${newRecords.length}건, 기존 ${skipped}건 유지. 목록에서 확인하세요.`);
- }catch(e){zipStatus('복원 실패: '+e.message,true);}finally{btn.disabled=false;}
+  await render();restoreStatus(`복원 완료: 신규 ${newRecords.length}건, 기존 ${skipped}건 유지. 목록에서 확인하세요.`);
+ }catch(e){restoreStatus('복원 실패: '+e.message,true);}finally{btn.disabled=false;}
 };
 
 render();
