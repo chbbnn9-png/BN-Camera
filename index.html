@@ -54,6 +54,7 @@ button{padding:11px 13px}.status{padding:10px;line-height:1.4}
 <p id="backupStatus" class="status" style="margin-top:8px" role="status" aria-live="polite">백업 전입니다.</p></div>
 <div class="zip-section"><h3>② 통합 복원</h3>
 <label for="restoreZip">복원할 ZIP 파일 선택</label><input class="fileinput" id="restoreZip" type="file" accept=".zip,application/zip">
+<p id="selectedZipName" class="hint" aria-live="polite">선택한 파일 없음</p>
 <button id="restoreBtn" class="secondary" style="width:100%">누락된 기록 복원</button>
 <p id="restoreStatus" class="status" style="margin-top:8px" role="status" aria-live="polite">복원 전입니다.</p>
 <p class="hint">기존 기록은 유지하고 누락된 기록만 추가합니다.</p></div></details>
@@ -230,6 +231,8 @@ function zipBuild(entries){
  return new Blob([...parts,...central,end],{type:'application/zip'});
 }
 function downloadBlob(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
+function localBackupName(){const d=new Date(),p=n=>String(n).padStart(2,'0');return 'BN-'+String(d.getFullYear()).slice(-2)+p(d.getMonth()+1)+p(d.getDate())+'-'+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())+'.zip';}
+$('restoreZip').addEventListener('change',()=>{$('selectedZipName').textContent=$('restoreZip').files?.[0]?.name||'선택한 파일 없음';});
 const csvCols=['id','type','measuredAt','latitude','longitude','altitude','accuracy','altitudeAccuracy','memo','photoName','photoBytes','savedAt','locationSource','placeName','latitudeText','longitudeText','photoSource','referenceSource','locationInput'];
 function csvBytes(records){return encoder.encode('\ufeff'+[csvCols.join(','),...records.map(r=>csvCols.map(c=>csvField(r[c])).join(','))].join('\r\n'));}
 $('backupZip').onclick=async()=>{
@@ -244,8 +247,8 @@ $('backupZip').onclick=async()=>{
   entries.unshift({name:'records.csv',bytes:csvBytes(records)});
   entries.unshift({name:'records.json',bytes:encoder.encode(JSON.stringify(manifest,null,2))});
   if(total>100*1024*1024)throw Error('사진 합계가 100MB를 넘습니다. 휴대전화 안정성을 위해 백업을 중단했습니다.');
-  const zip=zipBuild(entries);downloadBlob(zip,'BN_통합백업_'+new Date().toISOString().slice(0,10)+'.zip');
-  zipStatus(`백업 다운로드 요청 완료: 기록 ${records.length}건, 사진 ${count}장, ZIP ${(zip.size/1024/1024).toFixed(2)}MB. 내 파일의 다운로드 폴더에서 ZIP 파일이 실제 저장됐는지 확인하세요.`);
+  const zip=zipBuild(entries);const filename=localBackupName();downloadBlob(zip,filename);
+  zipStatus(`백업 요청: ${filename} · 기록 ${records.length}건 · 사진 ${count}장 · ${(zip.size/1024/1024).toFixed(2)}MB. 다운로드 폴더에서 저장 여부를 확인하세요.`);
  }catch(e){zipStatus('백업 실패: '+e.message,true);}finally{btn.disabled=false;}
 };
 function zipRead(bytes){
@@ -286,7 +289,7 @@ $('restoreBtn').onclick=async()=>{
   }
   if(!confirm(`검증 완료: 백업 ${manifest.records.length}건 중 신규 ${newRecords.length}건, 기존 ${skipped}건입니다. 신규 기록만 복원할까요?`)){restoreStatus('복원을 취소했습니다.');return;}
   if(newRecords.length){const db=await openDB();await new Promise((resolve,reject)=>{const tx=db.transaction([STORE,PHOTO_STORE],'readwrite');const rs=tx.objectStore(STORE),ps=tx.objectStore(PHOTO_STORE);for(const r of newRecords)rs.add(r);for(const p of photos)ps.add(p);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||Error('복원 실패'));tx.onabort=()=>reject(tx.error||Error('복원 실패'));});}
-  await render();restoreStatus(`복원 완료: 신규 ${newRecords.length}건, 기존 ${skipped}건 유지. 목록에서 확인하세요.`);
+  await render();restoreStatus(`복원 완료: 신규 ${newRecords.length}건 · 기존 ${skipped}건 유지`);
  }catch(e){restoreStatus('복원 실패: '+e.message,true);}finally{btn.disabled=false;}
 };
 
