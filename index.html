@@ -16,18 +16,20 @@ label{margin:9px 0 5px}.grid{gap:7px;margin:9px 0}.item{padding:8px 10px}.item s
 button{padding:11px 13px}.status{padding:10px;line-height:1.4}
 .record{padding:10px 0}.record p{margin:5px 0}.fileinput{margin:7px 0}
 .zip-section{padding:10px 0}.zip-section+.zip-section{border-top:1px solid #dce6ed;margin-top:8px;padding-top:14px}.zip-section h3{font-size:15px;margin:0 0 8px;color:#18415b}
+/* Step 38: compact home and separate records view */
+.view-hidden{display:none!important}.latest-photo{width:100%;max-height:230px;object-fit:contain;border-radius:10px;background:#eef3f7}.compact-actions{display:flex;gap:8px}.compact-actions button{flex:1;min-width:0}.camera-main:disabled{opacity:.65}
 </style>
 </head>
-<body><main>
+<body><main><div id="homePage">
 <header><h1>내카메라 2.0</h1><p>사진과 위치를 간편하게 기록하세요</p></header>
 <section class="card"><h2>사진 촬영</h2>
-<p class="muted">사진에 위치를 연결하려면 먼저 아래에서 GPS를 측정하세요.</p>
+<p class="muted">촬영하면 GPS를 자동 측정하고 함께 저장합니다. GPS 실패 시 사진만 저장합니다.</p>
 <button id="openCamera" class="camera-main" type="button"><span class="symbol" aria-hidden="true">📷</span><span>사진 촬영</span></button>
 <input class="hidden" type="file" id="photoInput" accept="image/*" capture="environment" aria-label="새 사진 촬영">
 <p id="exifInfo" class="exif-note" role="status" aria-live="polite">촬영한 사진을 여기서 확인합니다.</p>
 <img id="photoPreview" class="photo-preview" alt="촬영한 사진 미리보기" hidden>
 <p id="photoInfo" class="hint">선택된 사진이 없습니다.</p>
-<button id="savePhoto" style="width:100%" disabled>촬영 사진 저장</button>
+<button id="savePhoto" style="width:100%" disabled hidden>저장 재시도</button>
 </section>
 <section class="card"><h2>위치 등록</h2>
 <p class="muted">좌표 또는 전체 플러스 코드를 입력해 장소를 저장하세요.</p>
@@ -43,11 +45,12 @@ button{padding:11px 13px}.status{padding:10px;line-height:1.4}
 </section>
 <section class="card"><h2>현재 위치 측정</h2><div id="status" class="status" role="status" aria-live="polite">아래 버튼을 눌러 위치를 측정하세요.</div>
 <div class="grid"><div class="item"><small>위도</small><strong id="lat">-</strong></div><div class="item"><small>경도</small><strong id="lon">-</strong></div><div class="item"><small>고도</small><strong id="alt">-</strong></div><div class="item"><small>수평 정확도</small><strong id="acc">-</strong></div><div class="item" style="grid-column:1/-1"><small>측정 시각</small><strong id="time">-</strong></div></div>
-<div class="buttons"><button id="measure">현재 위치 측정</button><button id="maps" class="secondary" disabled>Google 지도 확인</button></div>
+<div class="buttons"><button id="measure">현재 위치 측정</button><button id="save" disabled>위치만 저장</button><button id="maps" class="secondary" disabled>Google 지도 확인</button></div>
 <label for="memo">메모 (선택)</label><textarea id="memo" rows="2" maxlength="300" placeholder="예: 금성산 둘레길 쉼터"></textarea>
-<button id="save" style="width:100%;margin-top:12px" disabled>BN ID로 위치만 저장</button><p class="muted">GPS 측정 후 위치를 저장할 수 있습니다.</p></section>
+<p class="muted">GPS 측정 후 위치만 저장할 수 있습니다.</p></section>
 
-<details class="card collapsible" open><summary>저장된 기록 <span id="count">(0건)</span></summary><div class="buttons"><button id="export" class="secondary">CSV 내보내기</button><button id="refresh" class="secondary">목록 새로고침</button></div><p class="muted">기록은 이 브라우저에 저장됩니다. 사진까지 보관하려면 ZIP으로 백업하세요.</p><div id="records"><p class="muted">기록을 불러오는 중...</p></div></details>
+<section class="card" id="latestCard"><h2>최근 저장 사진</h2><img id="latestPhoto" class="latest-photo" hidden alt="최근 저장한 사진"><p id="latestInfo" class="hint">저장된 사진을 확인하는 중...</p><button id="showRecords" class="secondary" type="button" style="width:100%">전체 기록 보기 <span id="count">(0건)</span></button></section>
+</div><section class="card view-hidden" id="recordsPage"><div class="buttons"><button id="backHome" class="secondary" type="button">← 메인 화면</button><button id="export" class="secondary">CSV 내보내기</button><button id="refresh" class="secondary">새로고침</button></div><h2 style="margin-top:14px">전체 기록</h2><p class="muted">기록은 이 브라우저에 저장됩니다. 사진까지 보관하려면 ZIP으로 백업하세요.</p><div id="records"><p class="muted">기록을 불러오는 중...</p></div></section>
 <details class="card collapsible"><summary>통합 백업 · 복원</summary>
 <div class="zip-section"><h3>① 통합 백업</h3>
 <button id="backupZip" style="width:100%">사진 + 위치기록 ZIP 백업</button>
@@ -64,7 +67,7 @@ button{padding:11px 13px}.status{padding:10px;line-height:1.4}
 'use strict';
 const $=id=>document.getElementById(id);
 const DB_NAME='BN_NaeCamera2'; const STORE='records'; const PHOTO_STORE='photos';
-let dbPromise=null, current=null, busy=false, pendingPhoto=null, previewUrl=null, referenceBlob=null, referenceUrl=null;
+let dbPromise=null, current=null, busy=false, pendingPhoto=null, previewUrl=null, referenceBlob=null, referenceUrl=null, autoSaving=false, latestPhotoUrl=null;
  const GPS_STALE_MS=10*60*1000; // 10분 경과 시 촬영 위치 확인
 function status(msg,type=''){$('status').textContent=msg;$('status').className='status '+type;}
 function localTime(iso){return new Date(iso).toLocaleString('ko-KR');}
@@ -131,11 +134,37 @@ async function compressImage(file){
   throw new Error('사진을 3MB 이하로 압축하지 못했습니다.');
  }finally{URL.revokeObjectURL(url);}
 }
- function clearPhoto(){pendingPhoto=null;$('photoInput').value='';$('savePhoto').disabled=true;$('photoPreview').hidden=true;$('photoInfo').textContent='선택된 사진이 없습니다.';$('exifInfo').textContent='사진을 촬영하면 미리보기가 나타납니다.';if(previewUrl){URL.revokeObjectURL(previewUrl);previewUrl=null;}}
- $('openCamera').onclick=()=>$('photoInput').click();
- $('photoInput').addEventListener('change',async()=>{const file=$('photoInput').files?.[0];if(!file)return;$('savePhoto').disabled=true;$('photoInfo').textContent='사진을 3MB 이하 JPEG로 변환 중...';try{const blob=await compressImage(file);pendingPhoto=blob;if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl=URL.createObjectURL(blob);$('photoPreview').src=previewUrl;$('photoPreview').hidden=false;$('photoInfo').textContent=`JPEG 준비 완료 · ${(blob.size/1024/1024).toFixed(2)}MB`;$('exifInfo').textContent=current?(Date.now()-Date.parse(current.measuredAt)>GPS_STALE_MS?'GPS 측정 후 10분 이상 지났습니다. 사진 저장 전 현재 위치를 다시 측정하세요.':'측정된 GPS를 앱 기록에 연결합니다. JPEG EXIF에는 기록되지 않습니다.'):'현재 GPS 측정값이 없어 사진만 저장됩니다.';$('savePhoto').disabled=false;}catch(e){clearPhoto();$('photoInfo').textContent='사진 처리 실패: '+e.message;}});
- $('savePhoto').onclick=async()=>{if(!pendingPhoto)return;const blob=pendingPhoto,snapshot=current?{...current}:null;if(snapshot && Date.now()-Date.parse(snapshot.measuredAt)>GPS_STALE_MS && !confirm('GPS 측정 후 10분 이상 지났습니다. 이전 위치를 사진 기록에 연결할까요?\n취소하면 현재 위치를 다시 측정할 수 있습니다.'))return;$('savePhoto').disabled=true;try{const id=await uniqueId();const savedAt=new Date().toISOString();const item={id,type:snapshot?'photo_location':'photo',latitude:snapshot?.latitude??null,longitude:snapshot?.longitude??null,altitude:snapshot?.altitude??null,accuracy:snapshot?.accuracy??null,altitudeAccuracy:snapshot?.altitudeAccuracy??null,measuredAt:snapshot?.measuredAt??savedAt,memo:$('memo').value.trim(),photoName:id+'.jpg',photoBytes:blob.size,savedAt,locationSource:snapshot?'device_gps':'none'};await saveWithPhoto(item,blob);clearPhoto();$('memo').value='';current=null;$('maps').disabled=true;status(id+' 촬영 사진 저장 완료!','ok');await render();}catch(e){status('사진 저장 실패: '+e.message,'err');$('savePhoto').disabled=false;}};
- function manualCoords(){const la=$('manualLat').value.trim(),lo=$('manualLon').value.trim();const decimal=/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;if(!decimal.test(la)||!decimal.test(lo))throw Error('위도와 경도를 십진수 숫자로 입력하세요.');const latitude=Number(la),longitude=Number(lo);if(!Number.isFinite(latitude)||!Number.isFinite(longitude)||Math.abs(latitude)>90||Math.abs(longitude)>180)throw Error('위도는 -90~90, 경도는 -180~180 범위여야 합니다.');return {latitude,longitude,latitudeText:la,longitudeText:lo};}
+   function clearPhoto(){pendingPhoto=null;$('photoInput').value='';$('savePhoto').disabled=true;$('savePhoto').hidden=true;$('photoPreview').hidden=true;$('photoInfo').textContent='선택된 사진이 없습니다.';$('exifInfo').textContent='사진을 촬영하면 자동 저장합니다.';if(previewUrl){URL.revokeObjectURL(previewUrl);previewUrl=null;}}
+  $('openCamera').onclick=()=>{if(!autoSaving)$('photoInput').click();};
+  function measurePhotoGPS(){return new Promise((resolve)=>{
+    if(!window.isSecureContext||!navigator.geolocation){resolve(null);return;}
+    navigator.geolocation.getCurrentPosition(p=>resolve({latitude:p.coords.latitude,longitude:p.coords.longitude,altitude:p.coords.altitude,accuracy:p.coords.accuracy,altitudeAccuracy:p.coords.altitudeAccuracy,measuredAt:new Date(p.timestamp).toISOString()}),()=>resolve(null),{enableHighAccuracy:true,timeout:12000,maximumAge:0});
+  });}
+  async function commitPendingPhoto(snapshot){
+    if(!pendingPhoto)return;const blob=pendingPhoto;
+    const id=await uniqueId(),savedAt=new Date().toISOString();
+    const item={id,type:snapshot?'photo_location':'photo',latitude:snapshot?.latitude??null,longitude:snapshot?.longitude??null,altitude:snapshot?.altitude??null,accuracy:snapshot?.accuracy??null,altitudeAccuracy:snapshot?.altitudeAccuracy??null,measuredAt:snapshot?.measuredAt??savedAt,memo:$('memo').value.trim(),photoName:id+'.jpg',photoBytes:blob.size,savedAt,locationSource:snapshot?'device_gps':'none'};
+    await saveWithPhoto(item,blob);
+    clearPhoto();$('memo').value='';
+    status(id+(snapshot?' 사진 + GPS 자동 저장 완료!':' GPS 측정 실패 · 사진만 자동 저장 완료!'),'ok');
+    await render();
+  }
+  $('photoInput').addEventListener('change',async()=>{
+    const file=$('photoInput').files?.[0];if(!file||autoSaving)return;
+    autoSaving=true;$('openCamera').disabled=true;$('photoInfo').textContent='사진 압축 및 GPS 자동 측정 중...';
+    try{
+      const blob=await compressImage(file);pendingPhoto=blob;
+      if(previewUrl)URL.revokeObjectURL(previewUrl);previewUrl=URL.createObjectURL(blob);
+      $('photoPreview').src=previewUrl;$('photoPreview').hidden=false;
+      $('photoInfo').textContent=`JPEG ${(blob.size/1024/1024).toFixed(2)}MB · GPS 측정 중 (최대 약 12초)...`;
+      const snapshot=await measurePhotoGPS();
+      $('exifInfo').textContent=snapshot?'GPS 측정 성공. 사진과 위치를 저장합니다.':'GPS 측정 실패. 사진만 저장합니다.';
+      await commitPendingPhoto(snapshot);
+    }catch(e){$('exifInfo').textContent='자동 저장 실패: '+e.message+' · 아래 재시도 버튼을 누르세요.';$('exifInfo').className='exif-note err';$('savePhoto').hidden=false;$('savePhoto').disabled=!pendingPhoto;}
+    finally{autoSaving=false;$('openCamera').disabled=false;}
+  });
+  $('savePhoto').onclick=async()=>{if(!pendingPhoto||autoSaving)return;autoSaving=true;$('savePhoto').disabled=true;try{await commitPendingPhoto(null);$('exifInfo').className='exif-note';}catch(e){$('exifInfo').textContent='재시도 실패: '+e.message;$('savePhoto').disabled=false;}finally{autoSaving=false;}};
+function manualCoords(){const la=$('manualLat').value.trim(),lo=$('manualLon').value.trim();const decimal=/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$/;if(!decimal.test(la)||!decimal.test(lo))throw Error('위도와 경도를 십진수 숫자로 입력하세요.');const latitude=Number(la),longitude=Number(lo);if(!Number.isFinite(latitude)||!Number.isFinite(longitude)||Math.abs(latitude)>90||Math.abs(longitude)>180)throw Error('위도는 -90~90, 경도는 -180~180 범위여야 합니다.');return {latitude,longitude,latitudeText:la,longitudeText:lo};}
 
  const OLC_ALPHABET='23456789CFGHJMPQRVWX';
  function decodeFullPlusCode(value){
@@ -188,7 +217,11 @@ async function showPhoto(id,container){try{const blob=await getPhoto(id);if(!blo
 async function downloadPhoto(id){try{const blob=await getPhoto(id);if(!blob)throw new Error('사진을 찾지 못했습니다.');const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=id+'.jpg';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);}catch(e){alert('사진 다운로드 실패: '+e.message);}}
 
 function cellText(tag,text){const el=document.createElement(tag);el.textContent=text;return el;}
-async function render(){const root=$('records');root.replaceChildren();try{const items=await allRecords();$('count').textContent='('+items.length+'건)';if(!items.length){root.append(cellText('p','저장된 기록이 없습니다.'));return;}
+async function render(){const root=$('records');root.replaceChildren();try{const items=await allRecords();$('count').textContent='('+items.length+'건)';
+  if(latestPhotoUrl){URL.revokeObjectURL(latestPhotoUrl);latestPhotoUrl=null;}
+  const recent=items.find(r=>r.photoName);$('latestPhoto').hidden=true;
+  if(recent){try{const blob=await getPhoto(recent.id);if(blob){latestPhotoUrl=URL.createObjectURL(blob);$('latestPhoto').src=latestPhotoUrl;$('latestPhoto').hidden=false;$('latestInfo').textContent=recent.id+' · '+localTime(recent.savedAt)+(Number.isFinite(recent.latitude)?' · GPS 연결':' · 사진만');}else $('latestInfo').textContent='최근 사진 파일을 찾을 수 없습니다.';}catch(e){$('latestInfo').textContent='최근 사진 표시 실패: '+e.message;}}
+  else $('latestInfo').textContent='저장된 사진이 없습니다.';if(!items.length){root.append(cellText('p','저장된 기록이 없습니다.'));return;}
  for(const r of items){const article=document.createElement('article');article.className='record';const head=document.createElement('div');head.className='head';head.append(cellText('code',r.id),cellText('small',localTime(r.measuredAt)));article.append(head);
  const hasPos=Number.isFinite(r.latitude)&&Number.isFinite(r.longitude);
  const detail=hasPos?`위도 ${(r.latitudeText??String(r.latitude))} · 경도 ${(r.longitudeText??String(r.longitude))}\n고도 ${r.altitude==null?'없음':r.altitude.toFixed(1)+'m'} · 정확도 ${r.accuracy==null?'미확인':'±'+Math.round(r.accuracy)+'m'}\n위치 출처: ${r.locationSource==='photo_exif'?'기존 사진 EXIF':r.locationSource==='device_gps'?'현재 GPS':r.locationSource==='manual'?'직접 입력':r.locationSource==='none'?'없음':'기존 기록'}`:'위치정보 없음 (사진만 저장)';
@@ -206,6 +239,8 @@ $('export').onclick=async()=>{try{const records=await allRecords();if(!records.l
  const lines=[cols.join(','),...records.map(r=>cols.map(c=>csvField(r[c])).join(','))];const blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='BN_위치기록_'+new Date().toISOString().slice(0,10)+'.csv';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
  }catch(e){alert('CSV 내보내기 실패: '+e.message);}};
 $('refresh').onclick=render;
+$('showRecords').onclick=()=>{$('homePage').classList.add('view-hidden');$('recordsPage').classList.remove('view-hidden');window.scrollTo(0,0);};
+$('backHome').onclick=()=>{$('recordsPage').classList.add('view-hidden');$('homePage').classList.remove('view-hidden');window.scrollTo(0,0);};
 
 // STEP 4: 표준 ZIP (STORE 방식, 무압축) 생성 및 같은 형식 복원.
 const encoder=new TextEncoder(), decoder=new TextDecoder();
