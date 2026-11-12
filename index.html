@@ -18,13 +18,18 @@ button{padding:11px 13px}.status{padding:10px;line-height:1.4}
 .zip-section{padding:10px 0}.zip-section+.zip-section{border-top:1px solid #dce6ed;margin-top:8px;padding-top:14px}.zip-section h3{font-size:15px;margin:0 0 8px;color:#18415b}
 /* Step 38: compact home and separate records view */
 .view-hidden{display:none!important}.latest-photo{width:100%;max-height:230px;object-fit:contain;border-radius:10px;background:#eef3f7}.compact-actions{display:flex;gap:8px}.compact-actions button{flex:1;min-width:0}.camera-main:disabled{opacity:.65}
+/* Main actions: camera and GPS side by side */
+.main-action-row{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:9px 0}
+.main-action-row .camera-main{margin:0;width:100%;min-height:94px;font-size:17px;gap:4px}
+.main-action-row .camera-main .symbol{font-size:27px}
+.main-action-row .gps-main{background:#217c91}
 </style>
 </head>
 <body><main><div id="homePage">
 <header><h1>내카메라 2.0</h1><p>사진과 위치를 간편하게 기록하세요</p></header>
 <section class="card"><h2>사진 촬영</h2>
 <p class="muted">촬영하면 GPS를 자동 측정하고 함께 저장합니다. GPS 실패 시 사진만 저장합니다.</p>
-<button id="openCamera" class="camera-main" type="button"><span class="symbol" aria-hidden="true">📷</span><span>사진 촬영</span></button>
+<div class="main-action-row"><button id="openCamera" class="camera-main" type="button"><span class="symbol" aria-hidden="true">📷</span><span>사진 촬영</span></button><button id="measure" class="camera-main gps-main" type="button"><span class="symbol" aria-hidden="true">📍</span><span>현재 위치 측정</span></button></div>
 <input class="hidden" type="file" id="photoInput" accept="image/*" capture="environment" aria-label="새 사진 촬영">
 <p id="exifInfo" class="exif-note" role="status" aria-live="polite">촬영한 사진을 여기서 확인합니다.</p>
 <img id="photoPreview" class="photo-preview" alt="촬영한 사진 미리보기" hidden>
@@ -43,9 +48,9 @@ button{padding:11px 13px}.status{padding:10px;line-height:1.4}
 <label for="referenceSource">참고 사진 출처 (선택)</label><input id="referenceSource" style="width:100%;border:1px solid #cbd5df;border-radius:10px;padding:12px;font:inherit" maxlength="300" placeholder="예: 사진 제공 사이트 또는 URL">
 <button id="saveManual" style="width:100%;margin-top:14px">BN ID로 위치 등록</button><p id="manualStatus" class="status" role="status" aria-live="polite">좌표를 입력하면 저장할 수 있습니다.</p>
 </section>
-<section class="card"><h2>현재 위치 측정</h2><div id="status" class="status" role="status" aria-live="polite">아래 버튼을 눌러 위치를 측정하세요.</div>
+<section class="card"><h2>현재 위치 측정</h2><div id="status" class="status" role="status" aria-live="polite">위쪽 「현재 위치 측정」 버튼을 누르세요.</div>
 <div class="grid"><div class="item"><small>위도</small><strong id="lat">-</strong></div><div class="item"><small>경도</small><strong id="lon">-</strong></div><div class="item"><small>고도</small><strong id="alt">-</strong></div><div class="item"><small>수평 정확도</small><strong id="acc">-</strong></div><div class="item" style="grid-column:1/-1"><small>측정 시각</small><strong id="time">-</strong></div></div>
-<div class="buttons"><button id="measure">현재 위치 측정</button><button id="save" disabled>위치만 저장</button><button id="maps" class="secondary" disabled>Google 지도 확인</button></div>
+<div class="buttons"><button id="save" disabled>위치만 저장</button><button id="maps" class="secondary" disabled>Google 지도 확인</button></div>
 <label for="memo">메모 (선택)</label><textarea id="memo" rows="2" maxlength="300" placeholder="예: 금성산 둘레길 쉼터"></textarea>
 <p class="muted">GPS 측정 후 위치만 저장할 수 있습니다.</p></section>
 
